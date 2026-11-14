@@ -1,10 +1,19 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-if 'transformer' not in globals():
-    from mage_ai.data_preparation.decorators import transformer
-if 'test' not in globals():
-    from mage_ai.data_preparation.decorators import test
+# Use Mage's decorators if Mage is available, otherwise use no-op stand-ins
+# so this file can also be imported by pytest / CI without installing mage-ai.
+try:
+    if 'transformer' not in globals():
+        from mage_ai.data_preparation.decorators import transformer
+    if 'test' not in globals():
+        from mage_ai.data_preparation.decorators import test
+except ImportError:
+    def transformer(func):
+        return func
+
+    def test(func):
+        return func
 
 
 @transformer
