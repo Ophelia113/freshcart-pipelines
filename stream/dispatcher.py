@@ -29,8 +29,9 @@ def make_message(city, zone, order_type):
 
 
 def publish(channel, routing_key, message):
+    bad = "zone" not in message
     channel.basic_publish(exchange=EXCHANGE, routing_key=routing_key, body=json.dumps(message))
-    print(f"published key={routing_key} id={message['id']}", flush=True)
+    print(f"published key={routing_key} id={message['id']}" + (" BAD(no zone)" if bad else ""), flush=True)
 
 
 def main():
@@ -48,12 +49,17 @@ def main():
         connection.close()
         return
 
+        count = 0
     try:
         while True:
+            count += 1
             city = random.choice(list(ZONES))
             zone = random.choice(ZONES[city])
             order_type = random.choice(TYPES)
-            publish(channel, f"{city}.{zone}.{order_type}", make_message(city, zone, order_type))
+            message = make_message(city, zone, order_type)
+            if count % 10 == 0:
+                del message["zone"]            # every 10th message is bad: the zone field is missing
+            publish(channel, f"{city}.{zone}.{order_type}", message)
             time.sleep(2)
     except KeyboardInterrupt:
         pass

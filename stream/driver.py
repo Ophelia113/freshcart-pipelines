@@ -25,9 +25,13 @@ def main():
 
     def on_message(ch, method, properties, body):
         message = json.loads(body)
-        print(f"[{name}] key={method.routing_key} id={message.get('id')} "
-              f"zone={message.get('zone')} type={message.get('type')}", flush=True)
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+        if "zone" not in message:
+            print(f"[{name}] REJECTED key={method.routing_key} id={message.get('id')} (zone missing)", flush=True)
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)   # discard it, do not retry
+        else:
+            print(f"[{name}] key={method.routing_key} id={message.get('id')} "
+                  f"zone={message.get('zone')} type={message.get('type')}", flush=True)
+            ch.basic_ack(delivery_tag=method.delivery_tag)                   # processed OK
 
     channel.basic_consume(queue=queue, on_message_callback=on_message)  # manual ACK (auto_ack=False)
     try:
